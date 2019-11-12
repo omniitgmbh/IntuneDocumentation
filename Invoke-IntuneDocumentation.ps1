@@ -303,7 +303,7 @@ try{
 
 }
 #endregion
-#region Document Apps
+#region Document Apps assigned from stores
 $Intune_Apps = @()
 Get-IntuneMobileApp | ForEach-Object {
     $App_Assignment = Get-IntuneMobileAppAssignment -mobileAppId $_.id
@@ -320,7 +320,29 @@ Get-IntuneMobileApp | ForEach-Object {
         $Intune_Apps += $Intune_App
     }
 } 
-Add-WordText -FilePath $FullDocumentationPath -Heading Heading1 -Text "Applications"
+Add-WordText -FilePath $FullDocumentationPath -Heading Heading1 -Text "Applications assigned from stores"
+$Intune_Apps | Sort-Object Publisher,DisplayName | Add-WordTable -FilePath $FullDocumentationPath -AutoFitStyle Contents -Design LightListAccent2
+#endregion
+#region Document Other Applications
+Add-WordText -FilePath $FullDocumentationPath -Heading Heading1 -Text "Other Applications"
+$Intune_Apps = @()
+Get-IntuneMobileApp | ForEach-Object {
+    # All manually added apps have the commitedContentVersion field set (the store apps have this field empty)
+    if($_.committedContentVersion){
+        write-Log "Application: $($_.displayName)"
+        Add-WordText -FilePath $FullDocumentationPath -Heading Heading2 -Text $_.displayName
+        $ht2 = @{}
+        $_.psobject.properties | ForEach-Object {
+        $ht2[(Format-MsGraphData $($_.Name))] = if((Format-MsGraphData "$($_.Value)").Length -gt $MaxStringLengthSettings){
+                "$((Format-MsGraphData "$($_.Value)").substring(0, $MaxStringLengthSettings))..."
+            } else {
+                "$((Format-MsGraphData "$($_.Value)")) "
+            }
+        }
+        ($ht2.GetEnumerator() | Sort-Object -Property Name | Select-Object Name,Value) | Add-WordTable -FilePath $FullDocumentationPath -AutoFitStyle Window -Design LightListAccent2
+    }
+}
+
 $Intune_Apps | Sort-Object Publisher,DisplayName | Add-WordTable -FilePath $FullDocumentationPath -AutoFitStyle Contents -Design LightListAccent2
 #endregion
 #region Document App protection policies
