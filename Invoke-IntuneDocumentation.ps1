@@ -400,9 +400,20 @@ foreach($DCP in $DCPs){
 #region Document T&C
 write-Log "Terms and Conditions"
 $GAndT = Get-IntuneTermsAndConditions
+$TermsAndConditions = @()
 if($GAndT){
     Add-WordText -FilePath $FullDocumentationPath -Heading Heading1 -Text "Terms and Conditions"
     $GAndT | ForEach-Object { $_ | Select-Object -Property id,createdDateTime,lastModifiedDateTime,displayName,title,version } | Add-WordTable -FilePath $FullDocumentationPath -AutoFitStyle Contents -Design LightListAccent2
+
+    $GAndT | ForEach-Object {
+        $TaC = New-Object -TypeName PSObject
+        $TaC | Add-Member Noteproperty "ID" $_.id
+        $TaC | Add-Member Noteproperty "Version" $_.version
+        $TaC | Add-Member Noteproperty "Acceptance Statement" $_.acceptanceStatement
+        $TermsAndConditions += $TaC
+    }
+    Add-WordText -FilePath $FullDocumentationPath -Heading Heading1 -Text "Terms and Conditions - Details"
+    $TermsAndConditions | Sort-Object ID,Version | Add-WordTable -FilePath $FullDocumentationPath -AutoFitStyle Contents -Design LightListAccent2
 }
 #endregion
 #region Document EnrollmentRestrictions
